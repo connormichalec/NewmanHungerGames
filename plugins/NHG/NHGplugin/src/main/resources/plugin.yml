@@ -1,4 +1,4 @@
-main: nhg.nhg
+main: nhg.NHG
 version: 0.0.1
 author: "gooseinmyway"
 name: "NHG"
