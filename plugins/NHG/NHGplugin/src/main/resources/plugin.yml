@@ -2,3 +2,8 @@ main: nhg.NHG
 version: 0.0.1
 author: "gooseinmyway"
 name: "NHG"
+commands:
+   nhg:
+      description: "Newman Hunger Games core admin commands"
+      usage: /nhg <arg> [...]
+      permission: nhg.admin
