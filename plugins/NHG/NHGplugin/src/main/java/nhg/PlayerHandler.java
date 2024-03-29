@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 
 public class PlayerHandler {
@@ -22,6 +23,9 @@ public class PlayerHandler {
 
     private int timer = 0;
 
+    private int combatOfflineTimeDuration = 10;     // time duration for player to rejoin when in combat
+    private int offlineTimeDuration = 15;          // time duration for player to rejoin when not in combat.
+
     public PlayerHandler(NHG basePlugin) {
         this.basePlugin = basePlugin;
     }
@@ -31,20 +35,26 @@ public class PlayerHandler {
         
         // Check if this player is already registered in the array
         for(GamePlayer player : playersRegistered) {
-            if(player.getPlayerUUID() == p.getUniqueId()) {
+            if(player.getPlayerUUID().equals(p.getUniqueId())) {
 
                 // player already in array, make sure to mark them as joined the server.
 
                 player.playerJoined();
 
+                // TODO: for the future, make sure when ranking players at the end of the game, to remove those who have a >offlinetimeDuration just in case they never rejoined to be removed from game.
+
                 // Check if that player was in a game, if they were check their time penalty and set their inGame status depending.
                 if(player.getInGame()) {
                     // player was in a game, penalty for leaving will be bigger if they were in combat
                     if(player.getInCombat()) {
-                        
+                        if(player.getTimeSinceLeft()>combatOfflineTimeDuration) {
+                            player.setInGame(false);                         // remove them from game
+                            player.getPlayer().sendMessage("Womp womp");    // send them message
+                        }
                     }
-                    else {
-
+                    else if(player.getTimeSinceLeft()>offlineTimeDuration) {
+                        player.setInGame(false);                             // remove them from game
+                        player.getPlayer().sendMessage("Womp womp");        // send them message
                     }
 
                     player.timeSinceLeft = 0;
@@ -53,6 +63,16 @@ public class PlayerHandler {
                     // player is not in game, restore them to spectate.
 
                 }
+
+
+                // attempt to re-add them to game (wont work if theyre time penalty ran out)
+                if(!this.basePlugin.getGameHandler().addPlayer(player, false)) {
+                    // if not, spectator
+                    this.basePlugin.getGameHandler().addSpectator(player);
+                    this.playersSpectators.add(player);
+                }
+
+
                 return;
             }
         }
@@ -62,8 +82,13 @@ public class PlayerHandler {
         GamePlayer player = new GamePlayer(p.getUniqueId());
         player.playerJoined();
         playersRegistered.add(player);
+
         // attempt to add them to the game
-        basePlugin.getGameHandler().addPlayer(player, false);
+        if(!this.basePlugin.getGameHandler().addPlayer(player, false)) {
+            // if not, spectator
+            this.basePlugin.getGameHandler().addSpectator(player);
+            this.playersSpectators.add(player);
+        }
     }
 
     public void quitPlayer(Player p) {
@@ -99,7 +124,7 @@ public class PlayerHandler {
     public GamePlayer getGamePlayer(UUID uuid) {
 
         for(GamePlayer p : playersRegistered) {
-            if(p.getPlayerUUID() == uuid) {
+            if(p.getPlayerUUID().equals(uuid)) {
                 return(p);
             }
         }

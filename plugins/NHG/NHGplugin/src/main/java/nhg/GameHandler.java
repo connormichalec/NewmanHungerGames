@@ -1,8 +1,14 @@
 package nhg;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
+
+import nhg.Phase.Phase;
+import nhg.Phase.Phase0;
+import nhg.Phase.Phase1;
 
 public class GameHandler implements Listener {
 
@@ -28,13 +34,13 @@ public class GameHandler implements Listener {
     private boolean gamePause = true;            // paused until game has started
     private boolean allowAutoJoin = true;
 
-    // TODO: Make this cleaner and automatic
-    private boolean[] phaseSetup =               // has this phase already ran its setup method?
-    {false, false};   
-    
-    
+    private Phase phase0;
+    private Phase phase1;
+
     public GameHandler(NHG basePlugin) {
         this.basePlugin = basePlugin;
+        this.phase0 = new Phase0();
+        this.phase1 = new Phase1();
     }
 
     /**
@@ -66,6 +72,15 @@ public class GameHandler implements Listener {
             if(this.gamePause == true) {
                 // game has been paused, resume and unlock everyone.
                 this.gamePause = false;
+
+                for(GamePlayer player : this.basePlugin.getPlayerHandler().getRegisteredPlayers()) {
+                    if(!player.getIgnore() && player.getInGame()) {
+                        if(player.getInServer()) {
+                            player.getPlayer().resetTitle();
+                        }
+                    }
+                }
+                
             }
         }
     }
@@ -76,7 +91,15 @@ public class GameHandler implements Listener {
     public void pauseGame() {
         this.gamePause = true;
 
-        // lock everything up until resume
+        // lock everything up until resume (handled by NHG event handlers)
+
+        // display titles indefinitely
+        for(GamePlayer p : this.basePlugin.getPlayerHandler().getRegisteredPlayers()) {
+            if(p.getInGame() && p.getInServer()) {
+                p.getPlayer().sendTitle(ChatColor.RED+"Game Paused", "", 20, 9999999, 0);
+            }
+        }
+
     }
 
 
@@ -85,7 +108,7 @@ public class GameHandler implements Listener {
      * @param time
      */
     public void setTime(int time) {
-
+        this.timer = time;
     }
 
 
@@ -93,25 +116,53 @@ public class GameHandler implements Listener {
      * Try adding a player to the game
      * @param player
      * @param forceAdd force add the player, even if auto adding is no longer allowed
-     * @return whether the player was added to the game (true) or not (false)
+     * @return whether the player was added to a RUNNING game, will still return true if failed to add to a game because a game hasent been started.
      */
     public boolean addPlayer(GamePlayer player, boolean forceAdd) {
+        // clear titles, just in case they rejoin after a game was resumed:
+        player.getPlayer().resetTitle();
+
         if(gameStarted) {
-            if(this.allowAutoJoin || forceAdd == true && player.getInGame() == false) {
+            if(((this.allowAutoJoin || forceAdd == true) && player.getInGame() == false) && player.getInServer()) {
                 player.setInGame(true);
-                Bukkit.getLogger().info("Player joined successfully");
+                this.basePlugin.setGamemode(GameMode.SURVIVAL, player.getPlayer());
+
+                if(this.gamePause) {
+                    // send title
+                    player.getPlayer().sendTitle(ChatColor.RED+"Game Paused", "", 20, 9999999, 0);
+                }
                 return true;
             }
-            else if(player.getInGame()) {
-                // determine if the player was already in a game, if so, rejoin them to that. (PlayerHandler will manage countdown)
-                Bukkit.getLogger().info("Player joined successfully");
+            else if(player.getInGame() && player.getInServer()) {
+                // if the player was already in a game, if so, rejoin them to that. (PlayerHandler will manage countdown)
+
+                if(this.gamePause) {
+                    // send title
+                    player.getPlayer().sendTitle(ChatColor.RED+"Game Paused", "", 20, 9999999, 0);
+                }
                 return(true);
             }
+
+            return false;
         }
         
-        Bukkit.getLogger().info("Player DIDFNT joined successfully");
-        return false;
+        return true;
     }
+
+    /**
+     * Adds a player as a spectator, this is different than them being dead.
+     * @param player
+     */
+    public void addSpectator(GamePlayer player) {
+        if(player.getInServer()) {
+            this.basePlugin.setGamemode(GameMode.SPECTATOR, player.getPlayer());
+        }
+    }
+
+
+
+
+
 
     /**
      * keeps track of phases and events that should happen at certain times
@@ -119,10 +170,10 @@ public class GameHandler implements Listener {
     private void timeKeeper() {
 
         // TODO: Make this cleaner and configurable by YAML
-        if(timer >= 0 && timer < 60*20) {
+        if(timer >= 0 && timer < 6*20) {
             phase0();
         }
-        else if(timer >= 60*20 && timer < 120*20) {
+        else if(timer >= 6*20 && timer < 120*20) {
             phase1();
         }
         
@@ -139,33 +190,57 @@ public class GameHandler implements Listener {
             // only run the timekeeper every second, no need to do it every tick
             if(timer % 20 == 0) {
                 this.timeKeeper();
+
+                for(GamePlayer player : this.basePlugin.getPlayerHandler().getRegisteredPlayers()) {
+                    if(!player.getIgnore() && player.getInGame()) {
+                        Bukkit.getLogger().info(""+player.getPlayerUUID());
+                    }
+                }
             }
+
+            phase0.tick();
+            phase1.tick();
 
             timer++;
         }
+        else {
+            // game is paused
+        }
+    }
+
+    /**
+     * get whether or not the game is paused.
+     * @return
+     */
+    public boolean getGamePaused() {
+        return(this.gamePause);
     }
 
 
+    // TODO: Make managing this easier and more abstract.
     // PHASES //
 
     private void phase0() {
-        if(!phaseSetup[0]) {
-            // run phase setup
+        if(!phase0.isSetup()) {
             Bukkit.getServer().getLogger().info("PHASE 0");
+
             phase = 0;
-            phaseSetup[0] = true;
+            phase0.toggleRunning();
+            phase0.setSetup(true);
         }
     }
 
     private void phase1() {
-        if(!phaseSetup[1]) {
-            // run phase setup
+        if(!phase1.isSetup()) {
             Bukkit.getServer().getLogger().info("PHASE 1");
+
+            phase0.toggleRunning();     // phase 0 no longer should be running
+
             phase = 1;
-            phaseSetup[1] = true;
+            phase1.toggleRunning();
+            phase1.setSetup(true);
 
-            this.allowAutoJoin = false;
-
+            this.allowAutoJoin = false; // disable auto joining now.
             
         }
     }

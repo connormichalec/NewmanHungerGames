@@ -4,12 +4,18 @@
 package nhg;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
+
 
 
 public class NHG extends JavaPlugin implements Listener {
@@ -29,6 +35,11 @@ public class NHG extends JavaPlugin implements Listener {
 
         Bukkit.getPluginManager().registerEvents(this, this);
 
+        for(Player p : Bukkit.getServer().getOnlinePlayers()) {
+            // kick all online players (for reload) - cheap way to fix a bug cuz im lazy
+            p.kickPlayer("i didnt make this /rl compatible womp womp");
+        }
+
 
         // SCHEDULER //
         scheduler.scheduleSyncRepeatingTask(this, new Runnable() {
@@ -36,6 +47,7 @@ public class NHG extends JavaPlugin implements Listener {
             public void run() {
 
                 gameHandler.tick();
+                playerHandler.tick();
             }
         }, 0L, 0L);
         
@@ -44,6 +56,22 @@ public class NHG extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
 
+    }
+
+    /**
+     * For some reason i cannot set the gamemode immediately upon player joining, i think this might be a plugin conflict with multiverse or something
+     * either way this will set the gamemode after a couple tick delay.
+     * @param gamemode
+     * @param player
+     */
+    public void setGamemode(GameMode gamemode, Player player) {
+        scheduler.scheduleSyncDelayedTask(this, new Runnable() {
+            @Override
+            public void run() {
+
+                player.setGameMode(gamemode);
+            }
+        }, 10L);
     }
 
     // EVENTS //
@@ -56,6 +84,21 @@ public class NHG extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerLeave(PlayerQuitEvent e) {
         playerHandler.quitPlayer(e.getPlayer());
+    }
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent e) {
+        if(gameHandler.getGamePaused() && playerHandler.getGamePlayer(e.getPlayer().getUniqueId()).getInGame()) {
+            e.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onEntityDamage(EntityDamageEvent e) {
+
+        if(e.getEntityType() == EntityType.PLAYER && gameHandler.getGamePaused()) {
+            e.setCancelled(true);
+        }
     }
 
     public GameHandler getGameHandler() {

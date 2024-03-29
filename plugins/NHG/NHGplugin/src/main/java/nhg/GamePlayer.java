@@ -57,6 +57,14 @@ public class GamePlayer {
         return(this.inGame);
     }
 
+    public int getTimeSinceLeft() {
+        return(this.timeSinceLeft);
+    }
+
+    public void setTimeSinceLeft(int time) {
+        this.timeSinceLeft = time;
+    }
+
     /**
      * Set whether or not the player is in game
      * @param inGame

@@ -5,5 +5,5 @@ name: "NHG"
 commands:
    nhg:
       description: "Newman Hunger Games core admin commands"
-      usage: /nhg <arg> [...]
+      usage: "/nhg startgame/forceadd/pausegame [...]"
       permission: nhg.admin

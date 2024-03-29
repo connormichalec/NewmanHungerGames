@@ -22,6 +22,9 @@ public class CommandHandler implements CommandExecutor{
                 case "startgame":
                     basePlugin.getGameHandler().startGame();
                     break;
+                case "pausegame":
+                    basePlugin.getGameHandler().pauseGame();
+                    break;
                 default:
                     sender.sendMessage(ChatColor.RED+"Invalid arg");
             }
