@@ -3,7 +3,7 @@ package nhg;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
-import org.bukkit.entity.Player;
+import org.bukkit.Location;
 import org.bukkit.event.Listener;
 
 import nhg.Phase.Phase;
@@ -37,10 +37,15 @@ public class GameHandler implements Listener {
     private Phase phase0;
     private Phase phase1;
 
+    private boolean tpLobby = false;    // whether to tp new players to the lobby when they join
+    private Location lobbyLocation;
+
     public GameHandler(NHG basePlugin) {
         this.basePlugin = basePlugin;
-        this.phase0 = new Phase0();
-        this.phase1 = new Phase1();
+        this.phase0 = new Phase0(this.basePlugin, 8*20);
+        this.phase1 = new Phase1(this.basePlugin, 30*20);
+
+        this.lobbyLocation = new Location(Bukkit.getWorld("world"), 892, 201, -1231);
     }
 
     /**
@@ -54,11 +59,14 @@ public class GameHandler implements Listener {
             this.gameStarted = true;
             this.gamePause = false;
 
+            // allow auto joining and tp auto to lobby
+            this.tpLobby = true;
+            this.allowAutoJoin = true;
+
             // reset everything:
 
             this.phase = 0;
             this.timer = 0;
-            this.allowAutoJoin = true;
         
 
             // add all players EXECPT those marked as ignore in the server to game
@@ -127,6 +135,10 @@ public class GameHandler implements Listener {
                 player.setInGame(true);
                 this.basePlugin.setGamemode(GameMode.SURVIVAL, player.getPlayer());
 
+                if(this.tpLobby) {
+                    player.getPlayer().teleport(this.lobbyLocation);
+                }
+
                 if(this.gamePause) {
                     // send title
                     player.getPlayer().sendTitle(ChatColor.RED+"Game Paused", "", 20, 9999999, 0);
@@ -170,11 +182,11 @@ public class GameHandler implements Listener {
     private void timeKeeper() {
 
         // TODO: Make this cleaner and configurable by YAML
-        if(timer >= 0 && timer < 6*20) {
-            phase0();
+        if(timer == 0) {
+            phase0setup();
         }
-        else if(timer >= 6*20 && timer < 120*20) {
-            phase1();
+        else if(timer == phase0.getTotalPhaseTime()) {
+            phase1setup();
         }
         
         
@@ -198,6 +210,7 @@ public class GameHandler implements Listener {
                 }
             }
 
+            // ticks only register for active phases
             phase0.tick();
             phase1.tick();
 
@@ -220,29 +233,36 @@ public class GameHandler implements Listener {
     // TODO: Make managing this easier and more abstract.
     // PHASES //
 
-    private void phase0() {
-        if(!phase0.isSetup()) {
-            Bukkit.getServer().getLogger().info("PHASE 0");
+    private void phase0setup() {
+        Bukkit.getServer().getLogger().info("PHASE 0");
 
-            phase = 0;
-            phase0.toggleRunning();
-            phase0.setSetup(true);
-        }
+        for(GamePlayer player : this.basePlugin.getPlayerHandler().getRegisteredPlayers()) {
+                if(!player.getIgnore() && player.getInGame()) {
+                    player.getPlayer().sendMessage("Phase 0, lobby waiting period");
+                }
+            }
+
+        phase = 0;
+        phase0.toggleRunning();
     }
 
-    private void phase1() {
-        if(!phase1.isSetup()) {
-            Bukkit.getServer().getLogger().info("PHASE 1");
+    private void phase1setup() {
+        Bukkit.getServer().getLogger().info("PHASE 1");
 
-            phase0.toggleRunning();     // phase 0 no longer should be running
+        for(GamePlayer player : this.basePlugin.getPlayerHandler().getRegisteredPlayers()) {
+                if(!player.getIgnore() && player.getInGame()) {
+                    player.getPlayer().sendMessage("Phase 1, introduction and rules");
+                }
+            }
 
-            phase = 1;
-            phase1.toggleRunning();
-            phase1.setSetup(true);
+        phase0.toggleRunning();     // phase 0 no longer should be running
 
-            this.allowAutoJoin = false; // disable auto joining now.
+        phase = 1;
+        phase1.toggleRunning();
+
+        this.allowAutoJoin = false; // disable auto joining now.
+        this.tpLobby = false;
             
-        }
     }
 
     

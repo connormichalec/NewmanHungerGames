@@ -1,10 +1,18 @@
 package nhg.Phase;
 
+import nhg.NHG;
+
 public abstract class Phase {
 
-    protected boolean setup = false;        // has this phase been setup yet.
     protected boolean running = false;
     protected int timer = 0;
+    protected NHG basePlugin;
+    protected int totalPhaseTime;
+
+    public Phase(NHG basePlugin, int totalPhaseTime) {
+        this.basePlugin = basePlugin;
+        this.totalPhaseTime = totalPhaseTime;
+    }
 
     public void tick() {
         timer++;
@@ -13,17 +21,16 @@ public abstract class Phase {
         }
     }
 
-    public boolean isSetup() {
-
-        return(this.setup);
-    }
-
-    public void setSetup(boolean setup) {
-        this.setup = setup;
-    }
-
     public void toggleRunning() {
         this.running = !this.running;
+    }
+
+    /**
+     * 
+     * @return total expected time to run this phase for. -1 means indefinite 
+     */
+    public int getTotalPhaseTime() {
+        return this.totalPhaseTime;
     }
 
     /**

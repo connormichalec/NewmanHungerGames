@@ -25,6 +25,7 @@ public class NHG extends JavaPlugin implements Listener {
     private PlayerHandler playerHandler;
     private GameHandler gameHandler;
     private CommandHandler commandHandler;
+    private YamlDataHandler dataHandler;
 
     @Override
     public void onEnable() {
@@ -32,6 +33,7 @@ public class NHG extends JavaPlugin implements Listener {
         gameHandler = new GameHandler(this);
         playerHandler = new PlayerHandler(this);
         commandHandler = new CommandHandler(this);
+        dataHandler = new YamlDataHandler(this);
 
         Bukkit.getPluginManager().registerEvents(this, this);
 
@@ -39,6 +41,15 @@ public class NHG extends JavaPlugin implements Listener {
             // kick all online players (for reload) - cheap way to fix a bug cuz im lazy
             p.kickPlayer("i didnt make this /rl compatible womp womp");
         }
+
+        playerHandler.serverLoad();
+
+        dataHandler.createDirectoryIfMissing("plugins/NHG");
+        dataHandler.copyTemplateIfMissing("gameData.yml", "plugins/NHG/gameData");
+        dataHandler.addFile("data", "plugins/ArcticValentines/gameData.yml");
+        dataHandler.loadFileYAML("data");
+
+        dataHandler.initializeScheduledUpdate(1000, "data");
 
 
         // SCHEDULER //
@@ -55,6 +66,7 @@ public class NHG extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        dataHandler.update("data");
 
     }
 

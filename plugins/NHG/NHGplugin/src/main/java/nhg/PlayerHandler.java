@@ -30,6 +30,14 @@ public class PlayerHandler {
         this.basePlugin = basePlugin;
     }
 
+    /*
+     * Go through saved players in YAML and load any players in array.
+     */
+    public void serverLoad() {
+        
+
+    }
+
     public void joinedPlayer(Player p) {
         // player joined the server.
         
