@@ -7,3 +7,5 @@ commands:
       description: "Newman Hunger Games core admin commands"
       usage: "/nhg startgame/forceadd/pausegame [...]"
       permission: nhg.admin
+
+softdepend: [PlaceholderAPI]

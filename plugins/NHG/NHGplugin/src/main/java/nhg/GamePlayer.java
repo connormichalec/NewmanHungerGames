@@ -95,5 +95,9 @@ public class GamePlayer {
     public boolean getIgnore() {
         return(this.ignore);
     }
+
+    public int getScore() {
+        return(this.score);
+    }
     
 }

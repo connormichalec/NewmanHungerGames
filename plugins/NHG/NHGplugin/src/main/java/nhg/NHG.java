@@ -52,6 +52,12 @@ public class NHG extends JavaPlugin implements Listener {
         dataHandler.initializeScheduledUpdate(1000, "data");
 
 
+
+        if(Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+              new NHGPlaceholders(this).register();
+        }
+
+
         // SCHEDULER //
         scheduler.scheduleSyncRepeatingTask(this, new Runnable() {
             @Override
