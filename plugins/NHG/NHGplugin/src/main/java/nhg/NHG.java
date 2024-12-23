@@ -3,12 +3,15 @@
  */
 package nhg;
 
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -26,10 +29,14 @@ public class NHG extends JavaPlugin implements Listener {
     private GameHandler gameHandler;
     private CommandHandler commandHandler;
     private YamlDataHandler dataHandler;
+    private BorderManager borderManager;
+
+    private World gameWorld = Bukkit.getWorld("world");
 
     @Override
     public void onEnable() {
 
+        borderManager = new BorderManager(this);
         gameHandler = new GameHandler(this);
         playerHandler = new PlayerHandler(this);
         commandHandler = new CommandHandler(this);
@@ -51,6 +58,8 @@ public class NHG extends JavaPlugin implements Listener {
 
         dataHandler.initializeScheduledUpdate(1000, "data");
 
+        borderManager.reset();
+
 
 
         if(Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
@@ -65,6 +74,7 @@ public class NHG extends JavaPlugin implements Listener {
 
                 gameHandler.tick();
                 playerHandler.tick();
+                borderManager.tick();
             }
         }, 0L, 0L);
         
@@ -92,7 +102,24 @@ public class NHG extends JavaPlugin implements Listener {
         }, 10L);
     }
 
-    // EVENTS //
+    public GameHandler getGameHandler() {
+        return this.gameHandler;
+    }
+
+    public PlayerHandler getPlayerHandler() {
+        return this.playerHandler;
+    }
+
+    public World getGameWorld() {
+        return(this.gameWorld);
+    }
+
+    public BorderManager getBorderManager() {
+        return this.borderManager;
+    }
+
+    // TODO: Dedicated event handler
+    // EVENTS: PASS THESE EVENTS TO RESPECTIVE CLASSES //
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e) {
@@ -119,13 +146,11 @@ public class NHG extends JavaPlugin implements Listener {
         }
     }
 
-    public GameHandler getGameHandler() {
-        return this.gameHandler;
+    @EventHandler void onPlayerFight(EntityDamageByEntityEvent e) {
+        if(e.getEntity() instanceof Player && e.getDamager() instanceof Player) {
+            // player attacked player.
+            this.playerHandler.playerAttackedPlayer((Player) e.getEntity(), (Player) e.getDamager());
+        }
     }
-
-    public PlayerHandler getPlayerHandler() {
-        return this.playerHandler;
-    }
-
 }
 

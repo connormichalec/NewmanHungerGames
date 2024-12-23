@@ -24,6 +24,7 @@ public class GamePlayer {
     private boolean inServer = false;   // is the player even in the server. (useful for timeSinceLeft counter)
     private Player player;
     public int timeSinceLeft = 0;      // time since player left game, they have 3 minutes to rejoin! longer they wait, the longer the penalty is.
+    public int timeSinceLastCombat = 0;// time since player attacked another player or was attacked. Used to track if the player should still be in combat or not.
 
     /**
      * Create a fresh game player!
@@ -65,6 +66,14 @@ public class GamePlayer {
         this.timeSinceLeft = time;
     }
 
+    public int getTimeSinceLastCombat() {
+        return(this.timeSinceLastCombat);
+    }
+
+    public void setTimeSinceLastCombat(int time) {
+        this.timeSinceLastCombat = time;
+    }
+
     /**
      * Set whether or not the player is in game
      * @param inGame
@@ -79,6 +88,10 @@ public class GamePlayer {
      */
     public boolean getInCombat() {
         return(this.inCombat);
+    }
+
+    public void setInCombat(boolean inCombat) {
+        this.inCombat = inCombat;
     }
 
     /**

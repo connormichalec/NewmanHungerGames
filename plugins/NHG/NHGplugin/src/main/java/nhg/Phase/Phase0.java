@@ -1,16 +1,20 @@
 package nhg.Phase;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 
 import net.md_5.bungee.api.ChatColor;
+import nhg.BorderManager;
 import nhg.GamePlayer;
 import nhg.NHG;
 
 public class Phase0 extends Phase {
 
-    public Phase0(NHG basePlugin, int totalPhaseTime) {
-        super(basePlugin, totalPhaseTime);
-        //TODO Auto-generated constructor stub
+    private BorderManager borderManager;
+
+    public Phase0(NHG basePlugin, int totalPhaseTime, Phase firstPhase, BorderManager borderManager) {
+        super(basePlugin, totalPhaseTime, firstPhase);
+        this.borderManager = basePlugin.getBorderManager();
     }
 
 
@@ -27,6 +31,21 @@ public class Phase0 extends Phase {
                 }
             }
         }
+    }
+
+
+    @Override
+    protected void initializeProcedure() {
+
+        this.borderManager.setBorder(new Location(Bukkit.getWorld("world"), 892, 201, -1231), 100, 0);
+
+        Bukkit.getServer().getLogger().info("PHASE 0");
+
+        for(GamePlayer player : this.basePlugin.getPlayerHandler().getRegisteredPlayers()) {
+                if(!player.getIgnore() && player.getInGame()) {
+                    player.getPlayer().sendMessage("Phase 0, lobby waiting period");
+                }
+            }
     }
     
 }

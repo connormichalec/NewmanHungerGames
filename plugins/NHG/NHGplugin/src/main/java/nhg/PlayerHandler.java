@@ -23,6 +23,7 @@ public class PlayerHandler {
 
     private int timer = 0;
 
+    private int combatDuration = 10;                // time duration for combat to be active on a player before assuming no fighting is happening again. 
     private int combatOfflineTimeDuration = 10;     // time duration for player to rejoin when in combat
     private int offlineTimeDuration = 15;          // time duration for player to rejoin when not in combat.
 
@@ -99,6 +100,19 @@ public class PlayerHandler {
         }
     }
 
+    /**
+     * Handle combat timer
+     * @param attacked
+     * @param attacker
+     */
+    public void playerAttackedPlayer(Player attacked, Player attacker) {
+        GamePlayer attackedGamePlayer = getGamePlayer(attacked);
+        GamePlayer attackerGamePlayer = getGamePlayer(attacker);
+
+        attackedGamePlayer.setInCombat(true);
+        attackerGamePlayer.setInCombat(true);
+    }
+
     public void quitPlayer(Player p) {
         for(GamePlayer player : playersRegistered) {
             if(player.getPlayer() == p) {
@@ -139,14 +153,34 @@ public class PlayerHandler {
         return(null);
     }
 
+    public GamePlayer getGamePlayer(Player player) {
+
+    for(GamePlayer p : playersRegistered) {
+        if(p.getPlayerUUID().equals(player.getUniqueId())) {
+            return(p);
+        }
+    }
+    return(null);
+    }
+
 
     public void tick() {
         // Go through all disconnected players and increment their timeSinceLeft
+        // Go through all players and manage combat, if time since their last combat action has surpassed the maximum, disable in combat.
         
         if(timer%20 == 0) {
             for(GamePlayer p : this.playersRegistered) {
                 if(!p.getInServer()) {
-                    p.timeSinceLeft++;
+                    p.setTimeSinceLeft(p.getTimeSinceLeft()+1);
+                }
+                
+                if(p.getInCombat()) {
+                    if(p.getTimeSinceLastCombat()>combatDuration) {
+                        p.setInCombat(false);
+                        p.getPlayer().sendMessage("No longer in combt");
+                        p.setTimeSinceLastCombat(0);
+                    }
+                    p.setTimeSinceLastCombat(p.getTimeSinceLastCombat()+1);
                 }
             }
         }
